@@ -13,11 +13,11 @@ def download_start(image_url_list):
         temp = i * 5
         d = DownloadKit()
         try:
-            d.add(image_url_list[temp], goal_path='image_downloader')
-            d.add(image_url_list[temp + 1], goal_path='image_downloader')
-            d.add(image_url_list[temp + 2], goal_path='image_downloader')
-            d.add(image_url_list[temp + 3], goal_path='image_downloader')
-            d.add(image_url_list[temp + 4], goal_path='image_downloader')
+            d.add(image_url_list[temp], goal_path='../image_downloader')
+            d.add(image_url_list[temp + 1], goal_path='../image_downloader')
+            d.add(image_url_list[temp + 2], goal_path='../image_downloader')
+            d.add(image_url_list[temp + 3], goal_path='../image_downloader')
+            d.add(image_url_list[temp + 4], goal_path='../image_downloader')
         except IndexError as e:
             break
         time.sleep(2)
@@ -58,7 +58,7 @@ def image_downloader():
     for packet in page.listen.steps():
         # print(packet.url)  # 打印数据包url
         logger.info(f'正在下载第{count}张图片')
-        d.add(packet.url, goal_path='image_downloader', rename=dt.now().strftime("%Y-%m-%d-%H-%M-%S-%f") + '.jpg',
+        d.add(packet.url, goal_path='../image_downloader', rename=dt.now().strftime("%Y-%m-%d-%H-%M-%S-%f") + '.jpg',
               suffix='')
         count += 1
         page.scroll.down(40)

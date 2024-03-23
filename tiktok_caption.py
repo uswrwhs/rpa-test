@@ -8,7 +8,7 @@ from DrissionPage._pages.chromium_page import ChromiumPage
 from DrissionPage._units.actions import Actions
 from loguru import logger
 
-import my_utils
+from utils import my_utils
 
 ROOT_PATH = 'browserDownload'
 
@@ -174,13 +174,17 @@ def modify_personal_data(page_modify: ChromiumPage, user_id_modify):
 
 def brushVideo(page_brush: ChromiumPage, brush_user_id):
     def exploreOrRefulsh(page_brush_explore: ChromiumPage, or_user_id):
-
+        temp_func_start_time = time.time()
         # 返回首页
         while True:
             try:
                 page_brush_explore.ele('tag:button@aria-label=Close').ele('tag:svg').click()
                 break
             except:
+                current_endTime = time.time()
+                if current_endTime - temp_func_start_time > 60 * 1.5:
+                    page_brush_explore.get('https://www.tiktok.com')
+                    break
                 page_brush.wait(1, 2.1)
                 continue
         if random.random() >= 0.5:
@@ -253,9 +257,18 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
         # logger.info(f'{brush_user_id}正在测试exploreOrRefulsh函数功能')
         # exploreOrRefulsh(page_brush, brush_user_id)
 
-        try:
-            page_brush.ele('tag:button@aria-label=Go to next video', timeout=10).ele('tag:svg').click()
-        except:
+        for_flag = 0
+        for _ in range(2):
+            next_video = page_brush.wait.ele_loaded('tag:button@aria-label=Go to next video', timeout=10)
+            if next_video:
+                try:
+                    next_video.ele('tag:svg').click()
+                    break
+                except Exception as e:
+                    # print(e)
+                    pass
+            for_flag += 1
+        if for_flag == 2:
             # 进入explore界面或者刷新主页视频
             logger.info(f'{brush_user_id}当前页面视频已经全部刷完，刷新主页或者进入explore页观看视频')
             exploreOrRefulsh(page_brush, brush_user_id)
@@ -296,8 +309,9 @@ def commentAreaAt(page_comment: ChromiumPage, comment_user_id, file_index):
     # page_comment.wait(5, 10)
 
     # 滑块验证
-    # if not my_utils.validation(page_comment, comment_user_id):
-    #     logger.info(f'{comment_user_id}滑块验证失败，请检查原因')
+    if not my_utils.validation(page_comment, comment_user_id):
+        logger.info(f'{comment_user_id}滑块验证失败，请检查原因')
+        return False, 'error'
 
     title = page_comment.ele('tag:div@class=DraftEditor-root')
 
@@ -318,73 +332,56 @@ def commentAreaAt(page_comment: ChromiumPage, comment_user_id, file_index):
     comment_count = 1
 
     ac = Actions(page_comment)
+    temp_click_box = page_comment.ele('tag:p@class:PCommentTitle')
+    comment_input_count = 1
+    for once_comment in [lines[i:i + 5] for i in range(0, len(lines), 5)]:
+        title.input('Gucci&LV&Chanel')
+        ac.type(' starting from $19')
+        ac.click(temp_click_box)
+        title.input('', clear=False)
 
-    for comment in lines:
-        if (comment_count - 1) % 5 == 0:
-            title.input('Gucci&LV&Chanel starting from $19')
-
-        temp_com = comment
         # page_comment.ele('tag:div@data-e2e=comment-at-icon').click()
         timeout_count = 0
-        logger.info(f'-------------------')
-        logger.info(temp_com)
-        for _ in range(4):
-            ac.type('@')
-            # for char_i in temp_com:
-            #     ac.type(char_i)
-            #     page_comment.wait(0.2, 0.5)
-            ac.type(temp_com)
-            page_comment.wait(1, 2)
-            at_all_box = page_comment.wait.ele_loaded('tag:div@data-e2e=comment-at-user', timeout=10)
-            # break
-            at_box_list = at_all_box.eles('tag:span@data-e2e=comment-at-uniqueid', timeout=10)
+        for comment in once_comment:
+            for _ in range(3):
+                ac.type('@')
+                ac.type(comment)
+                page_comment.wait(2, 3.5)
+                at_all_box = page_comment.wait.ele_loaded('tag:div@data-e2e=comment-at-user', timeout=10)
+                # break
+                at_box_list = at_all_box.eles('tag:span@data-e2e=comment-at-uniqueid', timeout=10)
 
-            # top_at_box = at_box_list[0]
+                user_id_index = 0
+                for box in at_box_list:
+                    temp = get_string_between_tags(box.html)
+                    if temp == comment:
+                        break
+                    user_id_index += 1
 
-            user_id_index = 0
-            for box in at_box_list:
-                temp = get_string_between_tags(box.html)
-                if temp == comment:
-                    break
-                user_id_index += 1
+                if user_id_index == len(at_box_list):
+                    # logger.info(f'{user_id_index}----{len(id_text_list)}')
+                    timeout_count += 1
+                    ac.type((Keys.CTRL, 'z'))
+                    page_comment.wait(1, 3)
+                    continue
 
-            # soup = BeautifulSoup(all_box_html, 'html.parser')
-            # user_id_index = 0
-            # id_text_list = soup.find_all('span', {'data-e2e': 'comment-at-uniqueid'})
-            # logger.info(id_text_list)
-            # for span in id_text_list:
-            #     if span.text == comment:
-            #         logger.info(f'{span}----{comment}')
-            #         break
-            #     user_id_index += 1
-
-            if user_id_index == len(at_box_list):
-                # logger.info(f'{user_id_index}----{len(id_text_list)}')
-                timeout_count += 1
-                ac.type((Keys.CTRL, 'z'))
-                page_comment.wait(1, 3)
-                continue
-
-            ac.move_to(at_all_box).scroll(on_ele=at_box_list[user_id_index])
-            logger.info(f'{comment_user_id} 当前用户id{comment} 用户id{at_box_list[user_id_index].text}')
-            at_box_list[user_id_index].click()
-            break
-        if timeout_count == 4:
-            logger.info(f'{comment_user_id} {comment}此用户id无法找到')
-        page_comment.wait(0.5, 1.5)
-        if comment_count % 5 == 0:
-            logger.info(f'{comment_user_id}单次评论输入成功')
-            # logger.info(f'{comment_user_id}已完成第{comment_count}次输入，开始发送评论')
-            page_comment.ele('tag:div@data-e2e=comment-post').click()
-            logger.info(f'{comment_user_id}已完成第{int(comment_count / 5)}次输入，开始发送评论')
-            page_comment.wait(1, 2)
-            comment_count = 0
-        comment_count += 1
+                ac.move_to(at_all_box).scroll(on_ele=at_box_list[user_id_index])
+                logger.info(f'{comment_user_id} 当前用户id{comment} 用户id{at_box_list[user_id_index].text}')
+                at_box_list[user_id_index].click()
+                break
+            if timeout_count == 3:
+                logger.info(f'{comment_user_id} {comment}此用户id无法找到')
+            page_comment.wait(0.5, 1.5)
+        logger.info(f'{comment_user_id}单次评论输入成功')
+        page_comment.ele('tag:div@data-e2e=comment-post').click()
+        logger.info(f'{comment_user_id}已完成第{comment_input_count}次输入，开始发送评论')
+        page_comment.wait(1, 2)
+        comment_input_count += 1
 
     page_comment.get('https://www.tiktok.com/foryou')
     logger.info(f'{comment_user_id}评论区@完成正在回到首页')
 
-    return True
+    return True, '1414'
 
 
 def resetTabBar(page_reset: ChromiumPage):

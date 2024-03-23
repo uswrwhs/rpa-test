@@ -1,0 +1,7 @@
+ddddocr
+pandas
+DrissionPage
+loguru
+selenium
+msvcrt
+numpy
