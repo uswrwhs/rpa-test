@@ -28,15 +28,26 @@ def upload_video(page_upload: ChromiumPage, user_id):
     # 上传文件
 
     video_path = f'./{ROOT_PATH}/{user_id}/video_1.mp4'
-    file_upload_iframe = page_upload.wait.ele_loaded('tag:iframe', timeout=60, raise_err=True)
-    file_upload_box = file_upload_iframe.eles('tag:button', timeout=10)[0]
+    file_upload_box = None
+    for _ in range(3):
+        try:
+            file_upload_iframe = page_upload.wait.ele_loaded('tag:iframe', timeout=60, raise_err=True)
+            file_upload_box = file_upload_iframe.eles('tag:button', timeout=10)[0]
+            logger.error(f'{user_id} iframe界面加载失败，正在重试')
+        except:
+            logger.error(f'{user_id} iframe界面加载失败，正在重试')
+            page_upload.wait(2, 3.5)
+            continue
+    if not file_upload_box:
+        logger.error(f'{user_id}上传视频时出现问题,请检查网络')
+        return False
     file_upload_box.wait(1, 3.2)
     file_upload_box.click.to_upload(video_path)
 
     logger.info(f'{user_id}文件上传中，请等待')
     file_upload_box.wait(1, 3.2)
-    cancel = page_upload.wait.ele_loaded('tag:div@@text()=Cancel', timeout=10)
-    delete_flag = page_upload.wait.ele_deleted(cancel, timeout=200)
+    cancel = page_upload.wait.ele_loaded('tag:div@@text()=Cancel', timeout=20)
+    delete_flag = page_upload.wait.ele_deleted(cancel, timeout=500)
     if delete_flag:
         logger.info(f'{user_id}文件上传完成')
     else:
@@ -218,10 +229,14 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
     # 进入视频界面
     logger.info(f'{brush_user_id}开始刷视频')
     start_flag = page_brush.wait.ele_loaded('tag:span@data-e2e=comment-icon', timeout=10)
-    start_flag.click()
+    if start_flag:
+        start_flag.click()
+    else:
+        logger.error(f'{brush_user_id}网络出现波动，请稍后重试')
+        return False
 
     func_start_time = time.time()
-    cycle_time = random.uniform(7, 15) * 60
+    cycle_time = random.uniform(7, 10) * 60
 
     like_count = 1
     video_count = 1
@@ -324,17 +339,18 @@ def commentAreaAt(page_comment: ChromiumPage, comment_user_id, file_index):
         return False, '123'
 
     at_box = page_comment.ele('tag:div@data-e2e=comment-at-icon', timeout=10).ele('tag:svg')
-    page_comment.scroll.to_see(at_box)
-
-    # title.input('Gucci&LV&Chanel starting from $19')
+    if at_box:
+        page_comment.scroll.to_see(at_box)
+    else:
+        logger.error(f'{comment_user_id}可能出现网络问题，请检查错误原因')
+        return False, 'network_error'
 
     logger.info(f'{comment_user_id}开始输入评论')
-    comment_count = 1
 
     ac = Actions(page_comment)
     temp_click_box = page_comment.ele('tag:p@class:PCommentTitle')
     comment_input_count = 1
-    for once_comment in [lines[i:i + 5] for i in range(0, len(lines), 5)]:
+    for once_comment in [lines[i:i + 2] for i in range(0, len(lines), 2)][:3]:
         title.input('Gucci&LV&Chanel')
         ac.type(' starting from $19')
         ac.click(temp_click_box)
@@ -343,13 +359,16 @@ def commentAreaAt(page_comment: ChromiumPage, comment_user_id, file_index):
         # page_comment.ele('tag:div@data-e2e=comment-at-icon').click()
         timeout_count = 0
         for comment in once_comment:
-            for _ in range(3):
+            for _ in range(2):
                 ac.type('@')
                 ac.type(comment)
-                page_comment.wait(2, 3.5)
+                # page_comment.wait(2, 3.5)
                 at_all_box = page_comment.wait.ele_loaded('tag:div@data-e2e=comment-at-user', timeout=10)
                 # break
-                at_box_list = at_all_box.eles('tag:span@data-e2e=comment-at-uniqueid', timeout=10)
+                if at_all_box:
+                    at_box_list = at_all_box.eles('tag:span@data-e2e=comment-at-uniqueid', timeout=10)
+                else:
+                    at_box_list = []
 
                 user_id_index = 0
                 for box in at_box_list:
@@ -361,7 +380,12 @@ def commentAreaAt(page_comment: ChromiumPage, comment_user_id, file_index):
                 if user_id_index == len(at_box_list):
                     # logger.info(f'{user_id_index}----{len(id_text_list)}')
                     timeout_count += 1
-                    ac.type((Keys.CTRL, 'z'))
+                    try:
+                        ac.type((Keys.CTRL, 'z'))
+                    except Exception as e:
+                        print(e)
+                        title.input('', clear=False)
+                        ac.type((Keys.CTRL, 'z'))
                     page_comment.wait(1, 3)
                     continue
 
@@ -390,4 +414,9 @@ def resetTabBar(page_reset: ChromiumPage):
 
     page_reset.get_tab(1).get('https://www.tiktok.com/')
 
+
 # 222 229 228 234 236 235 248 246 250 258 218 211
+
+if __name__ == '__main__':
+    x = [1, 2, 3, 4, 5, 6, 7, 5, 4, 5, 4, 1, 555]
+    print(x[:3])

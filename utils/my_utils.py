@@ -303,13 +303,36 @@ def extractData_from_userIdJson():
         f.writelines(userId_set)
 
 
+def extractData_from_face_txt():
+    with open('./facebook_10.txt', 'r', encoding='utf8') as f:
+        origin_data = f.readlines()
+    origin_json = {
+        'id': [],
+        'password': [],
+        '2fa': [],
+        'tel': [],
+        'email': [],
+        'email_pwd': [],
+        'ip_address': []
+    }
+    for origin in origin_data:
+        for line, data_once in zip(origin.split('---'), origin_json):
+            origin_json[data_once].append(line.split('：')[1])
+
+    csv_temp = pd.DataFrame(origin_json)
+    csv_temp.to_csv('facebook_10.csv', index=False, encoding='utf-8')
+
+
 if __name__ == '__main__':
     # rotate_image_f()
     # reset_video()
 
+    # extractData_from_userIdJson()
+
     # rename_video()
     # folder_reset()
-    # move_video()
-    extractData_from_userIdJson()
+    move_video()
+    # extractData_from_userIdJson()
     # logger.info('121')
+    # extractData_from_face_txt()
     # run()

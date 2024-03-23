@@ -15,9 +15,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-from my_utils import validation
+from utils.my_utils import validation
 
-ROOT_PATH = 'test'
+ROOT_PATH = 'other/test'
 LOG_PATH = f'./{ROOT_PATH}/logs'
 
 # 设置日志文件名和格式
@@ -244,7 +244,7 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
 
 # 获取直播间用户id
 def getLive_user_id(page_brush: ChromiumPage):
-    with open('browser_id.txt', 'r', encoding='utf8') as f:
+    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     url = input("请输入直播间链接: ")
@@ -254,7 +254,7 @@ def getLive_user_id(page_brush: ChromiumPage):
     page_brush.get(url)
     time.sleep(10)
     name_set = set()
-    file_path = './temp/name_dir'
+    file_path = 'other/temp/name_dir'
     # 获取当前时间
     now = datetime.datetime.now()
 
@@ -315,7 +315,7 @@ if __name__ == '__main__':
     # 记录开始时间
     start_time = time.time()
 
-    with open('browser_id.txt', 'r', encoding='utf8') as f:
+    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     user_id = 'jf9yo4g'

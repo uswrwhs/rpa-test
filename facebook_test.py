@@ -3,7 +3,9 @@ import json
 import os
 import time
 
+import pyotp
 import requests
+from DrissionPage._pages.chromium_page import ChromiumPage
 from DrissionPage.common import from_selenium
 from loguru import logger
 from selenium import webdriver
@@ -74,12 +76,34 @@ def get_page(get_user_id):
     return origin_page
 
 
+def face_init(init_page: ChromiumPage, email_init, pwd_init,fa_two_init):
+    def get_faTwo_code(fa_2):
+        # 创建一个TOTP对象
+        totp = pyotp.TOTP(fa_2)
+        # 生成当前时间的验证码
+        return totp.now()
+
+    init_page.get('https://mbasic.facebook.com/login.php')
+
+    init_page.ele('#m_login_email').input(email_init)
+    init_page.ele('tag:input@name=pass').input(pwd_init)
+
+    # 登陆账号
+    init_page.ele('tag:input@name=login').click()
+    fa_2_code=get_faTwo_code(fa_two_init)
+
+
 if __name__ == '__main__':
     # 记录开始时间
     start_time = time.time()
 
-    main_user_id = 'jfdfett'
-    page = get_page(main_user_id)
+    main_user_id = 'jfdfetk'
+    page_main = get_page(main_user_id)
+
+    email = 'qllbkegsas@rambler.ru'
+    pwd = 'E75l8#8XaO!U'
+    fa_two = 'GBWID44ZKESXDV7ZNDIRW75RY4YPFCPU'
+    face_init(page_main, email, pwd, fa_two)
 
     # 记录结束时间
     end_time = time.time()

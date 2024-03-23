@@ -80,10 +80,20 @@ def saveCompleteId(user_id_save):
 
 # 将user_id存入任务队列中
 def operate_browser(browser_id_op, model, temp_index, add_index):
-    selenium_webdriver, selenium_address, user_id = r.start_userID(user_id=browser_id_op)
+    selenium_webdriver, selenium_address, user_id = None, None, None
+    for _ in range(3):
+        try:
+            selenium_webdriver, selenium_address, user_id = r.start_userID(user_id=browser_id_op)
+            time.sleep(random.uniform(2, 5))
+        except:
+            continue
+        break
+    if selenium_webdriver is None:
+        logger.error(f'{browser_id_op}连接失败，请检查adspower是否打开')
+        return False
     page = r.start_selenium(selenium_webdriver, selenium_address, user_id)
     logger.info(f'{browser_id_op}   {model}')
-    temp_index+=add_index
+    temp_index += add_index
 
     #
     logger.info(f'当前是第{temp_index}台浏览器')
@@ -164,7 +174,7 @@ def exportIncompleteBrowserNumber():
     with open('other/temp/video/browser_id.json', 'r', encoding='utf8') as f:
         tran_json = json.load(f)
     # print(tran_json)
-    no_complete_browser_list = [tran_json[b_id] for b_id in browser_id_set]
+    no_complete_browser_list = [tran_json[b_id] for b_id in complete_browser_id_set]
     print(no_complete_browser_list)
 
 
@@ -208,8 +218,8 @@ def run(op_i, platformType_run):
 
 
 if __name__ == "__main__":
-    # 232 212
-    op_index_list = [3]
+    # 258 tiktok未登录
+    op_index_list = [1]
     platformType = 'tiktok'
     op_index = 0
     for operate_index in range(1):
