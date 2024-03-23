@@ -14,7 +14,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-import my_utils
+from utils import my_utils
 import tiktok_caption
 
 ROOT_PATH = 'browserDownload'
@@ -72,17 +72,18 @@ r = Run()
 
 def saveCompleteId(user_id_save):
     # 打开文件并获取锁
-    with open('complete_id.txt', 'a') as file:
+    with open('tiktok_complete_id.txt', 'a') as file:
         msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)  # 获取锁
         file.write(f"{user_id_save}\n")
         msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)  # 释放锁
 
 
 # 将user_id存入任务队列中
-def operate_browser(browser_id_op, model, temp_index):
+def operate_browser(browser_id_op, model, temp_index, add_index):
     selenium_webdriver, selenium_address, user_id = r.start_userID(user_id=browser_id_op)
     page = r.start_selenium(selenium_webdriver, selenium_address, user_id)
     logger.info(f'{browser_id_op}   {model}')
+    temp_index+=add_index
 
     #
     logger.info(f'当前是第{temp_index}台浏览器')
@@ -102,9 +103,6 @@ def operate_browser(browser_id_op, model, temp_index):
         elif model == 'brushVideo':
             flag = tiktok_caption.brushVideo(page, browser_id_op)
         elif model == 'commentAreaAt':
-            if temp_index > 21:
-                page.quit()
-                return 0
             page.wait(1, 5)
             logger.info(f'当前是第{temp_index}台浏览器')
             flag, next_flag = tiktok_caption.commentAreaAt(page, browser_id_op, temp_index)
@@ -123,14 +121,15 @@ def operate_browser(browser_id_op, model, temp_index):
     page.quit()
 
 
-def start_many_process(browsers, model, cycle_index):
+def start_many_process(browsers, model, cycle_index, complete_browser_length):
     # 启动多个进程来操作多个浏览器
 
     processes = []
     count = 1
     for browsers_id in browsers:
         temp = (cycle_index - 1) * len(browsers) + count
-        process = multiprocessing.Process(target=operate_browser, args=(browsers_id, model, temp))
+        process = multiprocessing.Process(target=operate_browser,
+                                          args=(browsers_id, model, temp, complete_browser_length))
         processes.append(process)
         process.start()
         count += 1
@@ -141,46 +140,47 @@ def start_many_process(browsers, model, cycle_index):
         process.join()
 
 
-def reset_complete_txt():
-    with open('browser_id.txt', 'r', encoding='utf8') as f:
+def reset_complete_txt(del_platformType_run):
+    with open(f'{del_platformType_run}_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_set = set(line.strip() for line in f.readlines())
-    with open('complete_id.txt', 'r', encoding='utf8') as f:
+    with open(f'{del_platformType_run}_complete_id.txt', 'r', encoding='utf8') as f:
         complete_browser_id_set = set(line.strip() for line in f.readlines())
     if origin_browser_id_set == complete_browser_id_set:
-        with open('complete_id.txt', 'w', encoding='utf8') as f:
+        with open(f'{del_platformType_run}_complete_id.txt', 'w', encoding='utf8') as f:
             f.write('')
         logger.info('complete文件已重置，可以进行新的操作')
 
 
 # 导出未完成的浏览器序号
 def exportIncompleteBrowserNumber():
-    with open('browser_id.txt', 'r', encoding='utf8') as f:
+    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_set = set(line.strip() for line in f.readlines())
-    with open('complete_id.txt', 'r', encoding='utf8') as f:
+    with open('tiktok_complete_id.txt', 'r', encoding='utf8') as f:
         complete_browser_id_set = set(line.strip() for line in f.readlines())
     # 去除已完成操作的浏览器
     browser_id_set = origin_browser_id_set - complete_browser_id_set
 
     # 读取编号转id的json文件
-    with open('temp/video/browser_id.json', 'r', encoding='utf8') as f:
+    with open('other/temp/video/browser_id.json', 'r', encoding='utf8') as f:
         tran_json = json.load(f)
     # print(tran_json)
     no_complete_browser_list = [tran_json[b_id] for b_id in browser_id_set]
     print(no_complete_browser_list)
 
 
-def run(op_i):
+def run(op_i, platformType_run):
     model_list = ['modify_personal_data', 'upload_video', 'brushVideo', 'commentAreaAt']
-    operate_index = op_i
+    operate_index_run = op_i
 
     # 最大进程数
     maxProcesses = 3
-    with open('browser_id.txt', 'r', encoding='utf8') as f:
-        origin_browser_id_set = set(line.strip() for line in f.readlines())
-    with open('complete_id.txt', 'r', encoding='utf8') as f:
-        complete_browser_id_set = set(line.strip() for line in f.readlines())
+    with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
+        origin_browser_id_set = set(line.strip() for line in f_1.readlines())
+    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
+        complete_browser_id_set = set(line.strip() for line in f_2.readlines())
     # 去除已完成操作的浏览器
     browser_id_set = origin_browser_id_set - complete_browser_id_set
+    complete_browser_length = len(complete_browser_id_set)
 
     numberCycles = math.ceil(len(browser_id_set) / maxProcesses)
 
@@ -191,7 +191,7 @@ def run(op_i):
             current_browser_id_list = random.sample(browser_id_set, maxProcesses)
         except ValueError:
             current_browser_id_list = list(browser_id_set)
-        start_many_process(current_browser_id_list, model_list[operate_index], cycle_count)
+        start_many_process(current_browser_id_list, model_list[operate_index_run], cycle_count, complete_browser_length)
         cycle_count += 1
         for repeat_i in current_browser_id_list:
             browser_id_set.remove(repeat_i)
@@ -204,21 +204,26 @@ def run(op_i):
     #     pool.join()
 
     logger.info('操作已全部完成')
-    # reset_complete_txt()
+    reset_complete_txt(platformType_run)
 
 
 if __name__ == "__main__":
     # 232 212
-    op_index_list = [3, 2]
+    op_index_list = [3]
+    platformType = 'tiktok'
     op_index = 0
-    run(2)
+    for operate_index in range(1):
+        run(op_index_list[operate_index], platformType)
+        # with open(f'{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
+        #     f.write('')
+
     # while True:
     #     run(op_index_list[op_index])
     #     time.sleep(random.uniform(2, 5))
     #
-    #     with open('browser_id.txt', 'r', encoding='utf8') as f:
+    #     with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
     #         origin_browser_id_set = set(line.strip() for line in f.readlines())
-    #     with open('complete_id.txt', 'r', encoding='utf8') as f:
+    #     with open('tiktok_complete_id.txt', 'r', encoding='utf8') as f:
     #         complete_browser_id_set = set(line.strip() for line in f.readlines())
     #     if len(origin_browser_id_set) != len(complete_browser_id_set):
     #         continue

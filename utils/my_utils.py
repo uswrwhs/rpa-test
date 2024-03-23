@@ -1,6 +1,7 @@
 import base64
 import datetime
 import json
+import msvcrt
 import os
 import random
 import shutil
@@ -18,7 +19,7 @@ from PIL import Image
 from loguru import logger
 
 t1 = datetime.datetime.now()
-ROOT_PATH = 'browserDownload'
+ROOT_PATH = '../browserDownload'
 
 
 # PIL图片保存为base64编码
@@ -54,7 +55,7 @@ def rotate_image_f(outer: ChromiumElement, rotate_user_id):
     inner_url = outer.next('tag:img').attr('src')
     # print(inner_url)
 
-    down_err_flag = download_img(url1, inner_url, f'./{ROOT_PATH}/{rotate_user_id}', 'outer.jpeg', 'inner.jpeg')
+    down_err_flag = download_img(url1, inner_url, f'{ROOT_PATH}/{rotate_user_id}', 'outer.jpeg', 'inner.jpeg')
     if not down_err_flag:
         logger.error(f'{rotate_user_id}进行旋转图片验证时出现错误，请及时处理')
         return -100
@@ -62,11 +63,11 @@ def rotate_image_f(outer: ChromiumElement, rotate_user_id):
     # discern('./publicPicture/inner.jpeg','./publicPicture/outer.jpeg',isSingle=True)
 
     # 加载外圈大图
-    img1 = Image.open(f'./{ROOT_PATH}/{rotate_user_id}/outer.jpeg')
+    img1 = Image.open(f'{ROOT_PATH}/{rotate_user_id}/outer.jpeg')
     # 图片转base64
     img1_base64 = PIL_base64(img1)
     # 加载内圈小图
-    img2 = Image.open(f'./{ROOT_PATH}/{rotate_user_id}/inner.jpeg')
+    img2 = Image.open(f'{ROOT_PATH}/{rotate_user_id}/inner.jpeg')
     # 图片转base64
     img2_base64 = PIL_base64(img2)
 
@@ -152,16 +153,17 @@ def img_valid(user_id):
 
     res = det.slide_match(target_bytes, background_bytes)
 
-    print(res)
+    logger.info(res)
     return res['target'][0], back_img.width
 
 
-# def saveCompleteId(user_id_save):
-#     # 打开文件并获取锁
-#     with open('complete_id.txt', 'a') as file:
-#         msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)  # 获取锁
-#         file.write(f"{user_id_save}\n")
-#         msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)  # 释放锁
+def saveCompleteId(user_id_save):
+    # 打开文件并获取锁
+    with open('tiktok_complete_id.txt', 'a') as file:
+        msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)  # 获取锁
+        file.write(f"{user_id_save}\n")
+        msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)  # 释放锁
+
 
 def del_last_img(del_path, del_name1, del_name2):
     try:
@@ -235,7 +237,7 @@ def validation(page_validation: ChromiumPage, user_id_validation):
 
 # 视频初始化
 def reset_video():
-    video_list = os.listdir('videos')
+    video_list = os.listdir('../videos')
     folder_list = [name for name in os.listdir(ROOT_PATH) if os.path.isdir(os.path.join(ROOT_PATH, name))]
 
     for folder, video in zip(folder_list, video_list):
@@ -253,7 +255,7 @@ def rename_video():
 
 def folder_reset():
     temp_dataframe = pd.read_excel('user_list_facebook.xlsx')
-    with open('browser_id_facebook.txt', 'w') as f:
+    with open('../facebook_browser_id.txt', 'w') as f:
         for i in temp_dataframe['id'][:10]:
             f.write(i + '\n')
 
@@ -271,12 +273,12 @@ def move_video():
     def is_folder_empty(folder_path):
         return not os.listdir(folder_path)
 
-    video_list = os.listdir('videos')
+    video_list = os.listdir('../videos')
     count = 0
-    with open('browser_id.txt', 'r') as f:
+    with open('../tiktok_browser_id.txt', 'r') as f:
         browser_ids = [line.strip() for line in f.readlines()]
     for browser_id in browser_ids:
-        shutil.move(f'videos/{video_list[count]}', f'{ROOT_PATH}/{browser_id}/video_1.mp4')
+        shutil.move(f'../videos/{video_list[count]}', f'{ROOT_PATH}/{browser_id}/video_1.mp4')
         count += 1
 
 
@@ -285,11 +287,11 @@ def run():
 
 
 def extractData_from_userIdJson():
-    userID_jsonNamelist = os.listdir('listener_data/tiktok_fans')
+    userID_jsonNamelist = os.listdir('../listener_data/tiktok_fans/irene93871')
     userId_set = set()
 
     for userID_jsonName in userID_jsonNamelist:
-        with open(f'./listener_data/tiktok_fans/{userID_jsonName}', 'r', encoding='utf8') as f:
+        with open(f'../listener_data/tiktok_fans/irene93871/{userID_jsonName}', 'r', encoding='utf8') as f:
             origin_data = json.load(f)
             userID_list = origin_data['userList']
         for userID in userID_list:
@@ -297,7 +299,7 @@ def extractData_from_userIdJson():
             if temp not in userId_set:
                 userId_set.add(temp)
 
-    with open('name_data_origin/name.txt', 'w', encoding='utf8') as f:
+    with open('../name_data_origin/name.txt', 'w', encoding='utf8') as f:
         f.writelines(userId_set)
 
 
@@ -306,8 +308,8 @@ if __name__ == '__main__':
     # reset_video()
 
     # rename_video()
-    folder_reset()
+    # folder_reset()
     # move_video()
-    # extractData_from_userIdJson()
+    extractData_from_userIdJson()
     # logger.info('121')
     # run()

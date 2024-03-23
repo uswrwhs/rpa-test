@@ -15,9 +15,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-import my_utils
+from utils import my_utils
+import tiktok_caption
 
-ROOT_PATH = 'test'
+ROOT_PATH = 'other/test'
 LOG_PATH = f'./{ROOT_PATH}/logs'
 
 # 设置日志文件名和格式 日志文件按不同日期分别存放
@@ -235,7 +236,7 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
 
 
 def getLive_user_id(page_brush: ChromiumPage):
-    with open('browser_id.txt', 'r', encoding='utf8') as f:
+    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     url = input("请输入直播间链接: ")
@@ -245,7 +246,7 @@ def getLive_user_id(page_brush: ChromiumPage):
     page_brush.get(url)
     time.sleep(10)
     name_set = set()
-    file_path = './temp/name_dir'
+    file_path = 'other/temp/name_dir'
     # 获取当前时间
     now = datetime.datetime.now()
 
@@ -336,7 +337,7 @@ if __name__ == '__main__':
     # 记录开始时间
     start_time = time.time()
 
-    with open('browser_id.txt', 'r', encoding='utf8') as f:
+    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     main_user_id = 'jf8r69r'
@@ -353,9 +354,9 @@ if __name__ == '__main__':
     # brushVideo(page, user_id)
     # getLive_user_id(page)
 
-    get_fans(page, main_user_id)
+    # get_fans(page, main_user_id)
 
-    # tiktok_caption.commentAreaAt(page, main_user_id, 1)
+    tiktok_caption.commentAreaAt(page, main_user_id, 1)
     # 记录结束时间
     end_time = time.time()
 

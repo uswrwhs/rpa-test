@@ -10,7 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-ROOT_PATH = 'test'
+ROOT_PATH = 'other/test'
 LOG_PATH = f'./{ROOT_PATH}/logs'
 
 # 设置日志文件名和格式 日志文件按不同日期分别存放
