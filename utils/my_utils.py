@@ -213,6 +213,7 @@ def slideVerif(page_slide: ChromiumPage, origin_img: ChromiumElement, user_id_te
 
 def validation(page_validation: ChromiumPage, user_id_validation):
     page_validation.set.NoneElement_value(None)
+    start_time = time.time()
     while True:
         counter_flag = 0
         err_flag = True
@@ -231,6 +232,9 @@ def validation(page_validation: ChromiumPage, user_id_validation):
             return False
         if counter_flag == 2:
             break
+        end_time = time.time()
+        if end_time - start_time > 3.5 * 60:
+            return False
         time.sleep(10)
     return True
 
@@ -254,8 +258,8 @@ def rename_video():
 
 
 def folder_reset():
-    temp_dataframe = pd.read_excel('user_list_facebook.xlsx')
-    with open('../facebook_browser_id.txt', 'w') as f:
+    temp_dataframe = pd.read_excel('user_list2024-03-27.xlsx')
+    with open('../facebook_browser_id_1.txt', 'w') as f:
         for i in temp_dataframe['id'][:10]:
             f.write(i + '\n')
 
@@ -265,7 +269,7 @@ def folder_reset():
     #
     # with open('browser_id.json', 'w') as f:
     #     json.dump(id_json, f, ensure_ascii=False, indent=4)
-    for browser_id in temp_dataframe['id'][:10]:
+    for browser_id in temp_dataframe['id']:
         os.makedirs(f'{ROOT_PATH}/{browser_id}', exist_ok=True)
 
 
@@ -278,6 +282,7 @@ def move_video():
     with open('../tiktok_browser_id.txt', 'r') as f:
         browser_ids = [line.strip() for line in f.readlines()]
     for browser_id in browser_ids:
+        os.makedirs(f'{ROOT_PATH}/{browser_id}', exist_ok=True)
         shutil.move(f'../videos/{video_list[count]}', f'{ROOT_PATH}/{browser_id}/video_1.mp4')
         count += 1
 
@@ -298,7 +303,6 @@ def extractData_from_userIdJson():
             temp = f"{userID['user']['uniqueId']}\n"
             if temp not in userId_set:
                 userId_set.add(temp)
-
     with open('../name_data_origin/name.txt', 'w', encoding='utf8') as f:
         f.writelines(userId_set)
 
@@ -323,6 +327,10 @@ def extractData_from_face_txt():
     csv_temp.to_csv('facebook_10.csv', index=False, encoding='utf-8')
 
 
+def generateImportFile():
+    print(1)
+
+
 if __name__ == '__main__':
     # rotate_image_f()
     # reset_video()
@@ -330,8 +338,8 @@ if __name__ == '__main__':
     # extractData_from_userIdJson()
 
     # rename_video()
-    # folder_reset()
-    move_video()
+    folder_reset()
+    # move_video()
     # extractData_from_userIdJson()
     # logger.info('121')
     # extractData_from_face_txt()

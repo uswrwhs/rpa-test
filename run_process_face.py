@@ -9,6 +9,7 @@ import time
 
 import pandas as pd
 import requests
+from DrissionPage._units.actions import Actions
 from DrissionPage.common import from_selenium
 from loguru import logger
 from selenium import webdriver
@@ -26,7 +27,7 @@ LOG_PATH = f'./logs/more_process'
 formatted_time = datetime.datetime.now().strftime("%Y-%m-%d---%H_%M_%S")
 current_data = datetime.datetime.now().strftime("%Y-%m-%d")
 os.makedirs(f'{LOG_PATH}/{current_data}', exist_ok=True)
-logger.add(f'{LOG_PATH}/{current_data}/{formatted_time}.log', format="{time} {level} {message}", level="INFO")
+logger.add(f'{LOG_PATH}/{current_data}/{formatted_time}-facebook.log', format="{time} {level} {message}", level="INFO")
 
 account_list = pd.read_csv('utils/facebook_10.csv', encoding='utf8')
 
@@ -77,16 +78,16 @@ class Run:
 r = Run()
 
 
-def saveCompleteId(user_id_save, save_platformType):
+def saveCompleteId(user_id_save, platformType):
     # 打开文件并获取锁
-    with open(f'{save_platformType}_complete_id.txt', 'a') as file:
+    with open(f'{platformType}_complete_id.txt', 'a') as file:
         msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)  # 获取锁
         file.write(f"{user_id_save}\n")
         msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)  # 释放锁
 
 
 # 将user_id存入任务队列中
-def operate_tiktok(browser_id_op, model, temp_index, add_index, op_platformType):
+def operate_tiktok(browser_id_op, model, temp_index, add_index):
     selenium_webdriver, selenium_address, user_id = None, None, None
     for _ in range(3):
         try:
@@ -120,8 +121,11 @@ def operate_tiktok(browser_id_op, model, temp_index, add_index, op_platformType)
         elif model == 'resetTabBar':
             flag = tiktok_caption.resetTabBar(page)
         elif model == 'brushVideo':
-            flag = tiktok_caption.brushVideo(page, browser_id_op)
-
+            try:
+                flag = tiktok_caption.brushVideo(page, browser_id_op)
+            except:
+                flag = False
+                time.sleep(random.uniform(5, 10))
         elif model == 'commentAreaAt':
             page.wait(1, 5)
             logger.info(f'当前是第{temp_index}台浏览器')
@@ -135,15 +139,14 @@ def operate_tiktok(browser_id_op, model, temp_index, add_index, op_platformType)
     platformType1 = 'tiktok'
 
     if flag:
-        saveCompleteId(browser_id_op, op_platformType)
+        saveCompleteId(browser_id_op, platformType1)
         logger.info(f'{browser_id_op}已完成操作')
     else:
         logger.info(f'{browser_id_op}有异常情况，发生中断')
     page.quit()
 
 
-def operate_facebook(browser_id_op, model, temp_index, add_index):
-    x_index = [3, 5, 7, 9]
+def operate_facebook(browser_id_op, model, temp_index, add_index, op_platformType):
     selenium_webdriver, selenium_address, user_id = None, None, None
     for _ in range(3):
         try:
@@ -164,27 +167,44 @@ def operate_facebook(browser_id_op, model, temp_index, add_index):
     #
     logger.info(f'当前是第{temp_index}台浏览器')
 
-    # logger.info(page.url)
-    flag = False
     if len(page.url) > len('https://www.facebook.com/'):
         page.get('https://www.facebook.com/')
+        page.wait(10, 20)
+    ac = Actions(page)
+    ac.move_to((400, 400)).click()
+    page.wait(1, 3)
+    ac.click()
+    page.wait(1, 3)
+    ac.click()
+    page.wait(1, 3)
 
+    # logger.info(page.url)
+    flag = False
     if model == 'login_init':
-        flag = facebook_caption.face_init(page, account_list['email'][x_index[temp_index - 1]],
-                                          account_list['password'][x_index[temp_index - 1]],
-                                          account_list['2fa'][x_index[temp_index - 1]], user_id)
+        flag = facebook_caption.face_init(page, account_list['email'][temp_index - 1],
+                                          account_list['password'][temp_index - 1],
+                                          account_list['2fa'][temp_index - 1], user_id)
+    elif model == 'brushPost':
+        try:
+            flag = facebook_caption.brushPost(page, user_id)
+        except:
+            page.wait(5, 10)
+            flag = True
+    elif model == 'joinGroup':
+        url = 'https://www.facebook.com/groups/olbeca/'
+        flag = facebook_caption.joinAGroup(page, user_id, url)
     else:
         flag = False
         # page.wait(15, 20)
     if flag:
-        saveCompleteId(browser_id_op, platformType)
+        saveCompleteId(browser_id_op, op_platformType)
         logger.info(f'{browser_id_op}已完成操作')
     else:
         logger.info(f'{browser_id_op}有异常情况，发生中断')
     page.quit()
 
 
-def start_many_process(browsers, model, cycle_index, complete_browser_length, start_platformType):
+def start_many_process(browsers, model, cycle_index, complete_browser_length):
     # 启动多个进程来操作多个浏览器
 
     processes = []
@@ -192,7 +212,7 @@ def start_many_process(browsers, model, cycle_index, complete_browser_length, st
     for browsers_id in browsers:
         temp = (cycle_index - 1) * len(browsers) + count
         process = multiprocessing.Process(target=operate_tiktok,
-                                          args=(browsers_id, model, temp, complete_browser_length, start_platformType))
+                                          args=(browsers_id, model, temp, complete_browser_length))
         processes.append(process)
         process.start()
         count += 1
@@ -203,7 +223,7 @@ def start_many_process(browsers, model, cycle_index, complete_browser_length, st
         process.join()
 
 
-def start_many_process_face(browsers, model, cycle_index, complete_browser_length):
+def start_many_process_face(browsers, model, cycle_index, complete_browser_length, many_platformType):
     # 启动多个进程来操作多个浏览器
 
     processes = []
@@ -211,7 +231,7 @@ def start_many_process_face(browsers, model, cycle_index, complete_browser_lengt
     for browsers_id in browsers:
         temp = (cycle_index - 1) * len(browsers) + count
         process = multiprocessing.Process(target=operate_facebook,
-                                          args=(browsers_id, model, temp, complete_browser_length))
+                                          args=(browsers_id, model, temp, complete_browser_length, many_platformType))
         processes.append(process)
         process.start()
         count += 1
@@ -256,45 +276,6 @@ def run(op_i, platformType_run):
     operate_index_run = op_i
 
     # 最大进程数
-    maxProcesses = 3
-    with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
-        origin_browser_id_set = set(line.strip() for line in f_1.readlines())
-    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
-        complete_browser_id_set = set(line.strip() for line in f_2.readlines())
-    # 去除已完成操作的浏览器
-    browser_id_set = origin_browser_id_set - complete_browser_id_set
-    complete_browser_length = len(complete_browser_id_set)
-
-    numberCycles = math.ceil(len(browser_id_set) / maxProcesses)
-
-    cycle_count = 1
-    for count_i in range(numberCycles):
-        # 随机选取N个浏览器 N = numberOfProcesses
-        try:
-            current_browser_id_list = random.sample(browser_id_set, maxProcesses)
-        except ValueError:
-            current_browser_id_list = list(browser_id_set)
-        start_many_process(current_browser_id_list, model_list[operate_index_run], cycle_count, complete_browser_length,platformType_run)
-        cycle_count += 1
-        for repeat_i in current_browser_id_list:
-            browser_id_set.remove(repeat_i)
-    # 线程池
-    # with multiprocessing.Pool(processes=maxProcesses) as pool:  # 创建一个包含maxProcesses个进程的进程池
-    #     for browser in browser_id_set:
-    #         time.sleep(random.uniform(2, 5))  # 暂停2秒
-    #         pool.apply_async(operate_browser, args=(browser, model_list[operate_index],))  # 使用进程池处理浏览器自动化操作
-    #     pool.close()
-    #     pool.join()
-
-    logger.info('操作已全部完成')
-    reset_complete_txt(platformType_run)
-
-
-def run2(op_i, platformType_run):
-    model_list_run2 = ['login_init']
-    operate_index_run = op_i
-
-    # 最大进程数
     maxProcesses = 5
     with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
         origin_browser_id_set = set(line.strip() for line in f_1.readlines())
@@ -313,8 +294,47 @@ def run2(op_i, platformType_run):
             current_browser_id_list = random.sample(browser_id_set, maxProcesses)
         except ValueError:
             current_browser_id_list = list(browser_id_set)
+        start_many_process(current_browser_id_list, model_list[operate_index_run], cycle_count, complete_browser_length)
+        cycle_count += 1
+        for repeat_i in current_browser_id_list:
+            browser_id_set.remove(repeat_i)
+    # 线程池
+    # with multiprocessing.Pool(processes=maxProcesses) as pool:  # 创建一个包含maxProcesses个进程的进程池
+    #     for browser in browser_id_set:
+    #         time.sleep(random.uniform(2, 5))  # 暂停2秒
+    #         pool.apply_async(operate_browser, args=(browser, model_list[operate_index],))  # 使用进程池处理浏览器自动化操作
+    #     pool.close()
+    #     pool.join()
+
+    logger.info('操作已全部完成')
+    reset_complete_txt(platformType_run)
+
+
+def run2(op_i, platformType_run):
+    model_list_run2 = ['init', 'brushPost', 'joinGroup']
+    operate_index_run = op_i
+
+    # 最大进程数
+    maxProcesses = 2
+    with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
+        origin_browser_id_set = set(line.strip() for line in f_1.readlines())
+    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
+        complete_browser_id_set = set(line.strip() for line in f_2.readlines())
+    # 去除已完成操作的浏览器
+    browser_id_set = origin_browser_id_set - complete_browser_id_set
+    complete_browser_length = len(complete_browser_id_set)
+
+    numberCycles = math.ceil(len(browser_id_set) / maxProcesses)
+
+    cycle_count = 1
+    for count_i in range(numberCycles):
+        # 随机选取N个浏览器 N = numberOfProcesses
+        try:
+            current_browser_id_list = random.sample(browser_id_set, maxProcesses)
+        except ValueError:
+            current_browser_id_list = list(browser_id_set)
         start_many_process_face(current_browser_id_list, model_list_run2[operate_index_run], cycle_count,
-                                complete_browser_length)
+                                complete_browser_length, platformType_run)
         cycle_count += 1
         for repeat_i in current_browser_id_list:
             browser_id_set.remove(repeat_i)
@@ -331,17 +351,18 @@ def run2(op_i, platformType_run):
 
 
 if __name__ == "__main__":
-    op_index_list = [2]
+    op_index_list = [0]
     model_list = ['modify_personal_data', 'upload_video', 'brushVideo', 'commentAreaAt']
-    platformType = 'tiktok'
+    face_model = ['init', 'brushPost', 'joinGroup']
+    platformType = 'facebook'
     op_index = 0
     # for operate_index in range(1):
     #     run2(op_index_list[operate_index], platformType)
-    # run(3, platformType)
 
+    # run2(1, platformType)
     while True:
-        run(2, platformType)
-        time.sleep(random.uniform(2, 3) * 60)
+        run2(1, platformType)
+        time.sleep(random.uniform(30, 40) * 60)
         with open(f'{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
             f.write('')
 
