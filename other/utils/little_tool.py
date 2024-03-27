@@ -9,7 +9,6 @@ def split_tiktok_txt(filename):
         'password': [],
         'email': [],
         'email_password': [],
-        'cookie': []
     }
     for line in lines:
         county = 0
@@ -37,7 +36,7 @@ def generate_import_template():
         'password': ['' for _ in range(len(ip_list))],  # 密码
         'fakey': ['' for _ in range(len(ip_list))],  # F2A二次验证码
         'cookie': ['' for _ in range(len(ip_list))],  # cookie
-        'proxytype': ['http' for _ in range(len(ip_list))],  # 代理类型
+        'proxytype': ['https' for _ in range(len(ip_list))],  # 代理类型
         'ipchecker': ['' for _ in range(len(ip_list))],  # IP查询渠道
         'proxy': ['' for _ in range(len(ip_list))],  # 代理参数 例子:192.168.0.1:8000:myproxy:password
         'proxyurl': ['' for _ in range(len(ip_list))],  # 移动代理的刷新url 仅用于移动代理
@@ -71,5 +70,5 @@ def generate_import_template():
 
 
 if __name__ == '__main__':
-    # split_tiktok_txt('tiktok_30.txt')
-    generate_import_template()
+    split_tiktok_txt('tiktok_10.txt')
+    # generate_import_template()
