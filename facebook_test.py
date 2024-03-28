@@ -1,13 +1,10 @@
 import datetime
 import json
 import os
-import random
 import time
 
-import clipboard
 import pyotp
 import requests
-from DrissionPage._functions.by import By
 from DrissionPage._pages.chromium_page import ChromiumPage
 from DrissionPage._units.actions import Actions
 from DrissionPage.common import from_selenium
@@ -16,7 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-import facebook_caption, utils.my_utils
+import facebook_caption
 
 ROOT_PATH = 'other/test'
 LOG_PATH = f'./{ROOT_PATH}/logs'

@@ -86,66 +86,6 @@ def saveCompleteId(user_id_save, platformType):
         msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)  # 释放锁
 
 
-# 将user_id存入任务队列中
-def operate_tiktok(browser_id_op, model, temp_index, add_index):
-    selenium_webdriver, selenium_address, user_id = None, None, None
-    for _ in range(3):
-        try:
-            # time.sleep(random.uniform(0.1, 5))
-            selenium_webdriver, selenium_address, user_id = r.start_userID(user_id=browser_id_op)
-            logger.info(f'{selenium_webdriver}----{selenium_address}----{user_id}')
-        except:
-            time.sleep(random.uniform(2, 4))
-            continue
-        break
-    if selenium_webdriver is None:
-        logger.error(f'{browser_id_op}连接失败，请检查adspower是否打开')
-        return False
-    page = r.start_selenium(selenium_webdriver, selenium_address, user_id)
-    logger.info(f'{browser_id_op}   {model}')
-    temp_index += add_index
-
-    #
-    logger.info(f'当前是第{temp_index}台浏览器')
-
-    # logger.info(page.url)
-    flag = False
-    if page.url.find('https://www.tiktok.com/') != -1 or len(page.url) > len('https://www.tiktok.com/foryou'):
-        page.get('https://www.tiktok.com/')
-    val_flag = my_utils.validation(page, browser_id_op)
-    if val_flag:
-        if model == 'modify_personal_data':
-            flag = tiktok_caption.modify_personal_data(page, browser_id_op)
-        elif model == 'upload_video':
-            flag = tiktok_caption.upload_video(page, browser_id_op)
-        elif model == 'resetTabBar':
-            flag = tiktok_caption.resetTabBar(page)
-        elif model == 'brushVideo':
-            try:
-                flag = tiktok_caption.brushVideo(page, browser_id_op)
-            except:
-                flag = False
-                time.sleep(random.uniform(5, 10))
-        elif model == 'commentAreaAt':
-            page.wait(1, 5)
-            logger.info(f'当前是第{temp_index}台浏览器')
-            flag = tiktok_caption.commentAreaAt_low(page, browser_id_op, temp_index)
-            # if next_flag == '123':
-            #     logger.info(f'用户id文件消耗完毕')
-            #     flag = True
-    else:
-        flag = False
-    # page.wait(15, 20)
-    platformType1 = 'tiktok'
-
-    if flag:
-        saveCompleteId(browser_id_op, platformType1)
-        logger.info(f'{browser_id_op}已完成操作')
-    else:
-        logger.info(f'{browser_id_op}有异常情况，发生中断')
-    page.quit()
-
-
 def operate_facebook(browser_id_op, model, temp_index, add_index, op_platformType):
     selenium_webdriver, selenium_address, user_id = None, None, None
     for _ in range(3):
@@ -204,25 +144,6 @@ def operate_facebook(browser_id_op, model, temp_index, add_index, op_platformTyp
     page.quit()
 
 
-def start_many_process(browsers, model, cycle_index, complete_browser_length):
-    # 启动多个进程来操作多个浏览器
-
-    processes = []
-    count = 1
-    for browsers_id in browsers:
-        temp = (cycle_index - 1) * len(browsers) + count
-        process = multiprocessing.Process(target=operate_tiktok,
-                                          args=(browsers_id, model, temp, complete_browser_length))
-        processes.append(process)
-        process.start()
-        count += 1
-        time.sleep(5)
-
-    # 等待所有进程完成
-    for process in processes:
-        process.join()
-
-
 def start_many_process_face(browsers, model, cycle_index, complete_browser_length, many_platformType):
     # 启动多个进程来操作多个浏览器
 
@@ -244,12 +165,12 @@ def start_many_process_face(browsers, model, cycle_index, complete_browser_lengt
 
 
 def reset_complete_txt(del_platformType_run):
-    with open(f'{del_platformType_run}_browser_id.txt', 'r', encoding='utf8') as f:
+    with open(f'txt_path/{del_platformType_run}_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_set = set(line.strip() for line in f.readlines())
-    with open(f'{del_platformType_run}_complete_id.txt', 'r', encoding='utf8') as f:
+    with open(f'txt_path/{del_platformType_run}_complete_id.txt', 'r', encoding='utf8') as f:
         complete_browser_id_set = set(line.strip() for line in f.readlines())
     if origin_browser_id_set == complete_browser_id_set:
-        with open(f'{del_platformType_run}_complete_id.txt', 'w', encoding='utf8') as f:
+        with open(f'txt_path/{del_platformType_run}_complete_id.txt', 'w', encoding='utf8') as f:
             f.write('')
         logger.info('complete文件已重置，可以进行新的操作')
 
@@ -271,54 +192,15 @@ def exportIncompleteBrowserNumber():
     print(no_complete_browser_list)
 
 
-def run(op_i, platformType_run):
-    model_list = ['modify_personal_data', 'upload_video', 'brushVideo', 'commentAreaAt']
-    operate_index_run = op_i
-
-    # 最大进程数
-    maxProcesses = 5
-    with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
-        origin_browser_id_set = set(line.strip() for line in f_1.readlines())
-    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
-        complete_browser_id_set = set(line.strip() for line in f_2.readlines())
-    # 去除已完成操作的浏览器
-    browser_id_set = origin_browser_id_set - complete_browser_id_set
-    complete_browser_length = len(complete_browser_id_set)
-
-    numberCycles = math.ceil(len(browser_id_set) / maxProcesses)
-
-    cycle_count = 1
-    for count_i in range(numberCycles):
-        # 随机选取N个浏览器 N = numberOfProcesses
-        try:
-            current_browser_id_list = random.sample(browser_id_set, maxProcesses)
-        except ValueError:
-            current_browser_id_list = list(browser_id_set)
-        start_many_process(current_browser_id_list, model_list[operate_index_run], cycle_count, complete_browser_length)
-        cycle_count += 1
-        for repeat_i in current_browser_id_list:
-            browser_id_set.remove(repeat_i)
-    # 线程池
-    # with multiprocessing.Pool(processes=maxProcesses) as pool:  # 创建一个包含maxProcesses个进程的进程池
-    #     for browser in browser_id_set:
-    #         time.sleep(random.uniform(2, 5))  # 暂停2秒
-    #         pool.apply_async(operate_browser, args=(browser, model_list[operate_index],))  # 使用进程池处理浏览器自动化操作
-    #     pool.close()
-    #     pool.join()
-
-    logger.info('操作已全部完成')
-    reset_complete_txt(platformType_run)
-
-
 def run2(op_i, platformType_run):
     model_list_run2 = ['init', 'brushPost', 'joinGroup']
     operate_index_run = op_i
 
     # 最大进程数
     maxProcesses = 4
-    with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
+    with open(f'txt_path/{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
         origin_browser_id_set = set(line.strip() for line in f_1.readlines())
-    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
+    with open(f'txt_path/{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
         complete_browser_id_set = set(line.strip() for line in f_2.readlines())
     # 去除已完成操作的浏览器
     browser_id_set = origin_browser_id_set - complete_browser_id_set

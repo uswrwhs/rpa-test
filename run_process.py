@@ -79,7 +79,7 @@ r = Run()
 
 def saveCompleteId(user_id_save, save_platformType):
     # 打开文件并获取锁
-    with open(f'{save_platformType}_complete_id.txt', 'a') as file:
+    with open(f'txt_path/{save_platformType}_complete_id.txt', 'a') as file:
         msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)  # 获取锁
         file.write(f"{user_id_save}\n")
         msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)  # 释放锁
@@ -145,48 +145,6 @@ def operate_tiktok(browser_id_op, model, temp_index, add_index, op_platformType)
     page.quit()
 
 
-def operate_facebook(browser_id_op, model, temp_index, add_index):
-    x_index = [3, 5, 7, 9]
-    selenium_webdriver, selenium_address, user_id = None, None, None
-    for _ in range(3):
-        try:
-            # time.sleep(random.uniform(0.1, 5))
-            selenium_webdriver, selenium_address, user_id = r.start_userID(user_id=browser_id_op)
-            logger.info(f'{selenium_webdriver}----{selenium_address}----{user_id}')
-        except:
-            time.sleep(random.uniform(2, 4))
-            continue
-        break
-    if selenium_webdriver is None:
-        logger.error(f'{browser_id_op}连接失败，请检查adspower是否打开')
-        return False
-    page = r.start_selenium(selenium_webdriver, selenium_address, user_id)
-    logger.info(f'{browser_id_op}   {model}')
-    # temp_index += add_index
-
-    #
-    logger.info(f'当前是第{temp_index}台浏览器')
-
-    # logger.info(page.url)
-    flag = False
-    if len(page.url) > len('https://www.facebook.com/'):
-        page.get('https://www.facebook.com/')
-
-    if model == 'login_init':
-        flag = facebook_caption.face_init(page, account_list['email'][x_index[temp_index - 1]],
-                                          account_list['password'][x_index[temp_index - 1]],
-                                          account_list['2fa'][x_index[temp_index - 1]], user_id)
-    else:
-        flag = False
-        # page.wait(15, 20)
-    if flag:
-        saveCompleteId(browser_id_op, platformType)
-        logger.info(f'{browser_id_op}已完成操作')
-    else:
-        logger.info(f'{browser_id_op}有异常情况，发生中断')
-    page.quit()
-
-
 def start_many_process(browsers, model, cycle_index, complete_browser_length, start_platformType):
     # 启动多个进程来操作多个浏览器
 
@@ -204,26 +162,6 @@ def start_many_process(browsers, model, cycle_index, complete_browser_length, st
     # 等待所有进程完成
     for process in processes:
         process.join()
-
-
-def start_many_process_face(browsers, model, cycle_index, complete_browser_length):
-    # 启动多个进程来操作多个浏览器
-
-    processes = []
-    count = 1
-    for browsers_id in browsers:
-        temp = (cycle_index - 1) * len(browsers) + count
-        process = multiprocessing.Process(target=operate_facebook,
-                                          args=(browsers_id, model, temp, complete_browser_length))
-        processes.append(process)
-        process.start()
-        count += 1
-        time.sleep(5)
-
-    # 等待所有进程完成
-    for process in processes:
-        process.join()
-    pass
 
 
 def reset_complete_txt(del_platformType_run):
@@ -260,10 +198,16 @@ def run(op_i, platformType_run):
 
     # 最大进程数
     maxProcesses = 8
-    with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
+    with open(f'txt_path/{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
         origin_browser_id_set = set(line.strip() for line in f_1.readlines())
-    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
-        complete_browser_id_set = set(line.strip() for line in f_2.readlines())
+    try:
+        with open(f'txt_path/{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
+            complete_browser_id_set = set(line.strip() for line in f_2.readlines())
+    except FileNotFoundError:
+        with open(f'txt_path/{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
+            complete_browser_id_set = set()
+        logger.info(f'txt_path/{platformType_run}_complete_id.txt 文件已创建')
+
     # 去除已完成操作的浏览器
     browser_id_set = origin_browser_id_set - complete_browser_id_set
     complete_browser_length = len(complete_browser_id_set)
@@ -277,47 +221,8 @@ def run(op_i, platformType_run):
             current_browser_id_list = random.sample(browser_id_set, maxProcesses)
         except ValueError:
             current_browser_id_list = list(browser_id_set)
-        start_many_process(current_browser_id_list, model_list[operate_index_run], cycle_count, complete_browser_length,platformType_run)
-        cycle_count += 1
-        for repeat_i in current_browser_id_list:
-            browser_id_set.remove(repeat_i)
-    # 线程池
-    # with multiprocessing.Pool(processes=maxProcesses) as pool:  # 创建一个包含maxProcesses个进程的进程池
-    #     for browser in browser_id_set:
-    #         time.sleep(random.uniform(2, 5))  # 暂停2秒
-    #         pool.apply_async(operate_browser, args=(browser, model_list[operate_index],))  # 使用进程池处理浏览器自动化操作
-    #     pool.close()
-    #     pool.join()
-
-    logger.info('操作已全部完成')
-    reset_complete_txt(platformType_run)
-
-
-def run2(op_i, platformType_run):
-    model_list_run2 = ['login_init']
-    operate_index_run = op_i
-
-    # 最大进程数
-    maxProcesses = 4
-    with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
-        origin_browser_id_set = set(line.strip() for line in f_1.readlines())
-    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
-        complete_browser_id_set = set(line.strip() for line in f_2.readlines())
-    # 去除已完成操作的浏览器
-    browser_id_set = origin_browser_id_set - complete_browser_id_set
-    complete_browser_length = len(complete_browser_id_set)
-
-    numberCycles = math.ceil(len(browser_id_set) / maxProcesses)
-
-    cycle_count = 1
-    for count_i in range(numberCycles):
-        # 随机选取N个浏览器 N = numberOfProcesses
-        try:
-            current_browser_id_list = random.sample(browser_id_set, maxProcesses)
-        except ValueError:
-            current_browser_id_list = list(browser_id_set)
-        start_many_process_face(current_browser_id_list, model_list_run2[operate_index_run], cycle_count,
-                                complete_browser_length)
+        start_many_process(current_browser_id_list, model_list[operate_index_run], cycle_count, complete_browser_length,
+                           platformType_run)
         cycle_count += 1
         for repeat_i in current_browser_id_list:
             browser_id_set.remove(repeat_i)
