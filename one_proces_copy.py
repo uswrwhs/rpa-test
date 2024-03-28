@@ -244,7 +244,7 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
 
 # 获取直播间用户id
 def getLive_user_id(page_brush: ChromiumPage):
-    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     url = input("请输入直播间链接: ")
@@ -315,7 +315,7 @@ if __name__ == '__main__':
     # 记录开始时间
     start_time = time.time()
 
-    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     user_id = 'jf9yo4g'

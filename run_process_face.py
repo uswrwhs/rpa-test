@@ -80,7 +80,7 @@ r = Run()
 
 def saveCompleteId(user_id_save, platformType):
     # 打开文件并获取锁
-    with open(f'{platformType}_complete_id.txt', 'a') as file:
+    with open(f'./txt_path/{platformType}_complete_id.txt', 'a') as file:
         msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)  # 获取锁
         file.write(f"{user_id_save}\n")
         msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)  # 释放锁
@@ -256,9 +256,9 @@ def reset_complete_txt(del_platformType_run):
 
 # 导出未完成的浏览器序号
 def exportIncompleteBrowserNumber():
-    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_set = set(line.strip() for line in f.readlines())
-    with open('tiktok_complete_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_complete_id.txt', 'r', encoding='utf8') as f:
         complete_browser_id_set = set(line.strip() for line in f.readlines())
     # 去除已完成操作的浏览器
     browser_id_set = origin_browser_id_set - complete_browser_id_set
@@ -315,7 +315,7 @@ def run2(op_i, platformType_run):
     operate_index_run = op_i
 
     # 最大进程数
-    maxProcesses = 2
+    maxProcesses = 4
     with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
         origin_browser_id_set = set(line.strip() for line in f_1.readlines())
     with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
@@ -359,14 +359,14 @@ if __name__ == "__main__":
     # for operate_index in range(1):
     #     run2(op_index_list[operate_index], platformType)
 
-    # run2(1, platformType)
-    while True:
-        run2(1, platformType)
-        time.sleep(random.uniform(30, 40) * 60)
-        with open(f'{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
-            f.write('')
+    run2(2, platformType)
+    # while True:
+    #     run2(2, platformType)
+    #     time.sleep(random.uniform(30, 40) * 60)
+    #     with open(f'./txt_path/{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
+    #         f.write('')
 
-    # with open(f'{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
+    # with open(f'./txt_path/{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
     #     f.write('')
 
     # while True:

@@ -120,8 +120,11 @@ def operate_tiktok(browser_id_op, model, temp_index, add_index, op_platformType)
         elif model == 'resetTabBar':
             flag = tiktok_caption.resetTabBar(page)
         elif model == 'brushVideo':
-            flag = tiktok_caption.brushVideo(page, browser_id_op)
-
+            try:
+                flag = tiktok_caption.brushVideo(page, browser_id_op)
+            except:
+                flag = False
+                time.sleep(random.uniform(5, 10))
         elif model == 'commentAreaAt':
             page.wait(1, 5)
             logger.info(f'当前是第{temp_index}台浏览器')
@@ -236,9 +239,9 @@ def reset_complete_txt(del_platformType_run):
 
 # 导出未完成的浏览器序号
 def exportIncompleteBrowserNumber():
-    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_set = set(line.strip() for line in f.readlines())
-    with open('tiktok_complete_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_complete_id.txt', 'r', encoding='utf8') as f:
         complete_browser_id_set = set(line.strip() for line in f.readlines())
     # 去除已完成操作的浏览器
     browser_id_set = origin_browser_id_set - complete_browser_id_set
@@ -256,7 +259,7 @@ def run(op_i, platformType_run):
     operate_index_run = op_i
 
     # 最大进程数
-    maxProcesses = 3
+    maxProcesses = 8
     with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
         origin_browser_id_set = set(line.strip() for line in f_1.readlines())
     with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
@@ -295,7 +298,7 @@ def run2(op_i, platformType_run):
     operate_index_run = op_i
 
     # 最大进程数
-    maxProcesses = 5
+    maxProcesses = 4
     with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
         origin_browser_id_set = set(line.strip() for line in f_1.readlines())
     with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
@@ -342,10 +345,10 @@ if __name__ == "__main__":
     while True:
         run(2, platformType)
         time.sleep(random.uniform(2, 3) * 60)
-        with open(f'{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
+        with open(f'./txt_path/{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
             f.write('')
 
-    # with open(f'{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
+    # with open(f'./txt_path/{platformType}_complete_id.txt', 'w', encoding='utf8') as f:
     #     f.write('')
 
     # while True:

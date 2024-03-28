@@ -27,6 +27,7 @@ def click_button(page_click: ChromiumPage, locator):
 
 # 刷短视频
 def brushReel(page_brushReel: ChromiumPage, brush_user_id):
+    """刷短视频"""
     page_brushReel.wait(3, 5)
     start_reel_time = time.time()
     cycle_time = random.uniform(3, 5) * 60
@@ -61,25 +62,36 @@ def brushReel(page_brushReel: ChromiumPage, brush_user_id):
 # 当前小组链接
 # https://www.facebook.com/groups/433276105788114/?ref=share_group_link
 # 加入指定小组
-def joinAGroup(page_joinAGroup: ChromiumPage, video_user_id, group_url):
+def joinAGroup(page_joinAGroup: ChromiumPage, joinGroup_user_id, group_url):
+    """加入指定小组"""
     ac = Actions(page_joinAGroup)
     page_joinAGroup.get(group_url)
     page_joinAGroup.wait(2, 3)
 
     join_box = page_joinAGroup.ele('tag:div@aria-label=加入小组', timeout=10).ele('tag:span@dir=auto')
-    ac.move_to(join_box).click()
-    logger.info(f'{video_user_id}正在加入指定小组')
+    if join_box:
+        ac.move_to(join_box).click()
+        logger.info(f'{joinGroup_user_id}正在加入指定小组')
+    else:
+        logger.error(f'{joinGroup_user_id}出现未知错误，加入小组按钮不存在')
     page_joinAGroup.wait(3, 5)
 
     # 返回主页
     back_box = page_joinAGroup.ele('tag:a@aria-label=Facebook', timeout=5)
-    ac.move_to(back_box).click()
-    page_joinAGroup.wait(3, 5)
-    logger.info(f'{video_user_id}正在返回主页')
+    if back_box:
+        ac.move_to(back_box).click()
+        page_joinAGroup.wait(3, 5)
+        logger.info(f'{joinGroup_user_id}正在返回主页')
+    else:
+        logger.error(f'{joinGroup_user_id}出现未知错误，主页按钮不存在，准备跳转主页')
+        return False
     return True
 
 
 def brushVideo(page_brushVideo: ChromiumPage, video_user_id):
+    """刷长视频
+    :return: flag:运行是否成功，all_like_count:视频点赞次数
+    """
     page_brushVideo.set.scroll.smooth()
     page_brushVideo.wait(10, 15)
     ac = Actions(page_brushVideo)
@@ -92,21 +104,26 @@ def brushVideo(page_brushVideo: ChromiumPage, video_user_id):
         cycle_time = random.uniform(4, 7) * 60
         video_count = 0
 
-        mian_video_lick = page_brushVideo.eles('tag:div@aria-label=赞')
-        for like_box in mian_video_lick:
-            if like_box.states.has_rect is not False:
-                like_box.click()
-                break
         logger.info(f'{video_user_id}正在给主视频点赞')
+        video_main_box = page_brushVideo.ele('tag:div@data-pagelet=WatchPermalinkVideo')
+        like_box = video_main_box.next().ele('tag:div@aria-label=赞')
+        if like_box:
+            ac.move_to(like_box).click()
+            logger.info(f'{video_user_id}主视频点赞成功')
+        else:
+            logger.error(f'{video_user_id}点赞失败，页面加载可能未完成')
+            page_brushVideo.wait(10, 15)
+
         while True:
             video_count += 1
             page_brushVideo.wait(8, 13)
             main_Feed = page_brushVideo.ele('tag:div@data-pagelet=MainFeed', timeout=10)
             logger.info(f'{video_user_id}正在刷视频，当前是第{video_count}个视频')
 
-            video_box = main_Feed.ele('tag:div@aria-label=赞', index=video_count)
+            video_box = main_Feed.ele('._6x84', index=video_count)
             if not video_box:
-                video_box = main_Feed.ele('tag:div@aria-label=赞', index=math.floor(video_count / 2))
+                ac.scroll(0, 300)
+                video_box = main_Feed.ele('._6x84', index=math.floor(video_count / 2))
                 if not video_box:
                     running_time = time.time() - start_time_video
                     logger.info(f'{video_user_id}获取下一个视频元素失败，准备返回首页')
@@ -114,16 +131,20 @@ def brushVideo(page_brushVideo: ChromiumPage, video_user_id):
                     logger.info(f'{video_user_id}一共观看了{video_count}个视频，完成{all_like_count}次点赞,'
                                 f'耗时{math.floor(running_time / 60)}分{math.ceil(running_time / 60)}秒')
                     return False, all_like_count
-            # page_brushVideo.scroll.to_see(video_box)
-            ac.move_to(video_box, duration=5)
+            page_brushVideo.scroll.to_see(video_box)
+
             if 0.5 < random.random() < 0.8:
                 page_brushVideo.wait(2, 4)
-                # like_box = main_Feed.ele('tag:div@aria-label=赞', index=video_count).ele('tag:i')
-                ac.click()
-                all_like_count += 1
-                ac.move(120, -100, duration=2)
-                logger.info(f'{video_user_id}正在点赞,已经完成{all_like_count}次点赞')
-                page_brushVideo.wait(2, 4)
+                like_box = video_box.ele('tag:div@aria-label=赞')
+                if like_box:
+                    ac.move_to(like_box).click()
+                    all_like_count += 1
+                    ac.move(120, -100, duration=2)
+                    logger.info(f'{video_user_id}正在点赞,已经完成{all_like_count}次点赞')
+                    page_brushVideo.wait(2, 4)
+                else:
+                    logger.error(f'{video_user_id}点赞失败，请检查原因')
+                    page_brushVideo.wait(4, 10)
 
             running_time = time.time() - start_time_video
             if running_time - cycle_time > 0:
@@ -150,6 +171,7 @@ def brushVideo(page_brushVideo: ChromiumPage, video_user_id):
 
 
 def brushPost(page_brushPost: ChromiumPage, post_user_id):
+    """主页刷帖"""
     page_brushPost.set.scroll.smooth()
     ac = Actions(page_brushPost)
     # 定位到第一个帖子
@@ -158,27 +180,31 @@ def brushPost(page_brushPost: ChromiumPage, post_user_id):
     # 定义刷帖时间
     port_start_time = time.time()
     cycle_time = random.uniform(60, 75) * 60
+    all_like_count = 0
     while True:
         # 滚动到帖子可见
         current_post = page_brushPost.ele(f'tag:div@role=article', index=current_index)
         logger.info(f'{post_user_id}正在主页观看文章，当前观看了{current_index}篇文章')
-        ac.move_to(current_post, duration=3.5)
         page_brushPost.scroll.to_see(current_post, center=True)
+        ac.move_to(current_post, duration=3.5)
+
         # 获取当前元素的静态版本，提升效率
         s_current_ele = current_post.s_ele()
         page_brushPost.wait(3, 5)
 
-        like_box = s_current_ele.ele('tag:div@aria-label=赞')
+        like_box_flag = s_current_ele.ele('tag:div@aria-label=赞')
 
         # states.is_alive
         # 判断元素是否可用 True为可用
 
         # 点赞时间触发概率
         if 0.2 < random.random() < 0.3:
-            if like_box:
-                current_post.ele('tag:div@aria-label=赞').click()
+            if like_box_flag:
+                like_box = current_post.ele('tag:div@aria-label=赞')
+                ac.move_to(like_box).click()
                 page_brushPost.wait(2, 4)
-                logger.info('')
+                all_like_count += 1
+                logger.info(f'{post_user_id}点赞成功，当前已点赞{all_like_count}次')
         # 确认当前帖子类型
         if s_current_ele.ele('tag:div@data-pagelet=Reels'):
             # 短视频
@@ -191,7 +217,8 @@ def brushPost(page_brushPost: ChromiumPage, post_user_id):
             if 0.1 < random.random() < 0.3:
                 ac.move_to(current_post, duration=3.5).click()
                 try:
-                    brushVideo(page_brushPost, post_user_id)
+                    flag, temp_count = brushVideo(page_brushPost, post_user_id)
+                    all_like_count += temp_count
                 except:
                     logger.info(f'{post_user_id}视频页发生错误，正在回到上一页')
                     ac.key_down(Keys.ESCAPE)
@@ -241,7 +268,13 @@ def brushPost(page_brushPost: ChromiumPage, post_user_id):
 
 
 def face_init(page_init: ChromiumPage, email_init, pwd_init, fa_two_init, user_id_init):
+    """Facebook登陆账号"""
+
     def get_faTwo_code(fa_2):
+        """返回2FA验证码
+        :param fa_2: 2FA序列号
+        :return: 6位验证码
+        """
         # 创建一个TOTP对象
         totp = pyotp.TOTP(fa_2)
         # 生成当前时间的验证码
@@ -301,6 +334,7 @@ def face_init(page_init: ChromiumPage, email_init, pwd_init, fa_two_init, user_i
 
 
 def send_message(page_send: ChromiumPage, user_id_send):
+    """发送私信"""
     logger.info(f'{user_id_send}进入私信页面')
     send_test = '61556571823159'
     ac = Actions(page_send)
@@ -318,6 +352,7 @@ def send_message(page_send: ChromiumPage, user_id_send):
 
 # 随机加推荐好友
 def Random_add_friends(page_addFri: ChromiumPage, user_id_addFri):
+    """添加2-3个推荐好友"""
     logger.info(f'{user_id_addFri}准备开始添加好友')
     ac = Actions(page_addFri)
 
@@ -334,6 +369,7 @@ def Random_add_friends(page_addFri: ChromiumPage, user_id_addFri):
 
 # 随机添加推荐小组
 def addGroupsRandomly(page_addGroup: ChromiumPage, user_id_addGroup):
+    """添加2-3个推荐小组"""
     sug_group_url = ''
     page_addGroup.get(sug_group_url)
     pass
@@ -341,6 +377,7 @@ def addGroupsRandomly(page_addGroup: ChromiumPage, user_id_addGroup):
 
 # 添加指定好友
 def addSpecifieFri(page_addGroup: ChromiumPage, user_id_addGroup):
+    """添加指定好友"""
     origin_url = 'https://www.facebook.com/profile.php?id='
     fri_id = '61556571823159'
     ac = Actions(page_addGroup)
@@ -366,6 +403,7 @@ def addSpecifieFri(page_addGroup: ChromiumPage, user_id_addGroup):
 
 
 def addFriendsInAGroup(page_add_FriInGp: ChromiumPage, user_id_add_FriInGp):
+    """在小组中添加好友"""
     ac = Actions(page_add_FriInGp)
     main_box = page_add_FriInGp.ele('tag:div@role=feed')
     current_child = main_box.child('tag:div').next('tag:div')

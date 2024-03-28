@@ -151,7 +151,7 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
     def exploreOrRefulsh(page_brush_explore: ChromiumPage, or_user_id):
         # 返回首页
         page_brush_explore.ele('tag:button@aria-label=Close').ele('tag:svg').click()
-        ac = Actions(page_brush_explore)
+
         if random.random() >= 0.5:
             # 前往explore界面刷视频
             explore_button = page_brush_explore.ele('tag:a@data-e2e=nav-explore', timeout=10).ele('tag:svg')
@@ -165,6 +165,7 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
                           .eles('tag:div@data-e2e=explore-item', timeout=10))
 
             # 移动到视频并点击进入界面
+            ac = Actions(page_brush_explore)
             rand_video = random.randint(0, len(video_list) - 1)
             ac.scroll(on_ele=video_list[rand_video])
             ac.move_to(ele_or_loc=video_list[rand_video])
@@ -173,20 +174,15 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
 
         else:
             logger.info(f'{or_user_id}首页刷新，继续从首页刷视频')
-            foryou_box = page_brush_explore.ele('tag:a@data-e2e=nav-foryou', timeout=5)
-            ac.move_to(foryou_box).click()
+            page_brush_explore.ele('tag:a@data-e2e=nav-foryou', timeout=5).ele('tag:svg').click()
             # 刷新首页视频
             page_brush_explore.refresh()
             page_brush.wait.ele_loaded('tag:span@data-e2e=comment-icon', timeout=10).click()
         logger.info(f'{or_user_id}继续开始视频')
 
     # 进入视频界面
-    for _temp in range(3)
     start_flag = page_brush.wait.ele_loaded('tag:span@data-e2e=comment-icon', timeout=10)
-    if start_flag:
-        ac.move_to(start_flag).click()
-    else:
-
+    start_flag.click()
 
     func_start_time = time.time()
     cycle_time = random.uniform(10, 15) * 60
@@ -200,14 +196,11 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
         page_brush.wait(5, 8)
 
         # 随机点赞 概率0.4
-        if 0.4 < random.random() < 0.8:
-            like_box = page_brush.ele('tag:span@data-e2e=browse-like-icon', timeout=10)
-            if like_box:
-                ac.move_to(like_box).click()
-                logger.info(f'{brush_user_id}正在点赞,已完成{like_count}个点赞')
-                like_count += 1
-            else:
-                logger.error(f'{brush_user_id}此视频找不到点赞按钮')
+        if 0.4 < random.random() < 0.6:
+            like_box = page_brush.ele('tag:span@data-e2e=browse-like-icon', timeout=10).ele('tag:svg')
+            like_box.click()
+            logger.info(f'{brush_user_id}正在点赞,已完成{like_count}个点赞')
+            like_count += 1
 
         # 每个视频看10-15秒
         page_brush.wait(6, 8)
@@ -243,7 +236,7 @@ def brushVideo(page_brush: ChromiumPage, brush_user_id):
 
 
 def getLive_user_id(page_brush: ChromiumPage):
-    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     url = input("请输入直播间链接: ")
@@ -344,7 +337,7 @@ if __name__ == '__main__':
     # 记录开始时间
     start_time = time.time()
 
-    with open('tiktok_browser_id.txt', 'r', encoding='utf8') as f:
+    with open('txt_path/tiktok_browser_id.txt', 'r', encoding='utf8') as f:
         origin_browser_id_list = [line.strip() for line in f.readlines()]
 
     main_user_id = 'jf8r69r'
@@ -362,9 +355,8 @@ if __name__ == '__main__':
     # getLive_user_id(page)
 
     # get_fans(page, main_user_id)
-    ac = Actions(page)
 
-    # tiktok_caption.brushVideo(page, main_user_id)
+    tiktok_caption.commentAreaAt(page, main_user_id, 1)
     # 记录结束时间
     end_time = time.time()
 

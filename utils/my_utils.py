@@ -259,7 +259,7 @@ def rename_video():
 
 def folder_reset():
     temp_dataframe = pd.read_excel('user_list2024-03-27.xlsx')
-    with open('../facebook_browser_id_1.txt', 'w') as f:
+    with open('../txt_path/facebook_browser_id_1.txt', 'w') as f:
         for i in temp_dataframe['id'][:10]:
             f.write(i + '\n')
 
@@ -279,7 +279,7 @@ def move_video():
 
     video_list = os.listdir('../videos')
     count = 0
-    with open('../tiktok_browser_id.txt', 'r') as f:
+    with open('../txt_path/tiktok_browser_id.txt', 'r') as f:
         browser_ids = [line.strip() for line in f.readlines()]
     for browser_id in browser_ids:
         os.makedirs(f'{ROOT_PATH}/{browser_id}', exist_ok=True)
@@ -329,6 +329,22 @@ def extractData_from_face_txt():
 
 def generateImportFile():
     print(1)
+
+
+def retry_click(origin_ele, click_path) -> bool:
+    """重试三次点击
+    :param origin_ele: 上级元素
+    :param click_path: 点击按钮路径
+    :return: 点击事件是否完成
+    """
+    if isinstance(click_path, list):
+        for _temp in range(3):
+
+            pass
+    elif isinstance(click_path, str):
+        pass
+
+    return True
 
 
 if __name__ == '__main__':
