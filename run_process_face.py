@@ -279,8 +279,13 @@ def run(op_i, platformType_run):
     maxProcesses = 5
     with open(f'{platformType_run}_browser_id.txt', 'r', encoding='utf8') as f_1:
         origin_browser_id_set = set(line.strip() for line in f_1.readlines())
-    with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
-        complete_browser_id_set = set(line.strip() for line in f_2.readlines())
+    try:
+        with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
+            complete_browser_id_set = set(line.strip() for line in f_2.readlines())
+    except FileNotFoundError:
+        with open(f'{platformType_run}_complete_id.txt', 'r', encoding='utf8') as f_2:
+            complete_browser_id_set = set()
+        logger.info(f'{platformType_run}_complete_id.txt 文件已创建')
     # 去除已完成操作的浏览器
     browser_id_set = origin_browser_id_set - complete_browser_id_set
     complete_browser_length = len(complete_browser_id_set)
